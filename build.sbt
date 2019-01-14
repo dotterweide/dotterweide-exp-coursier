@@ -10,6 +10,7 @@ val deps = new {
     val coursier            = "1.1.0-M9"
     val fileUtil            = "1.1.3"
     val slf4j               = "1.7.25"
+    val scalaSwing          = "2.1.0"
   }
   val test = new {
     val scalaTest           = "3.0.5"
@@ -43,10 +44,11 @@ lazy val root = project.in(file("."))
   .settings(
     name := baseName,
     libraryDependencies ++= Seq(
-      "de.sciss"        %%  "fileutil"  % deps.main.fileUtil, // utilities for path construction
-      "io.get-coursier" %%  "coursier"  % deps.main.coursier, // fetching artifacts
-      "net.harawata"    %   "appdirs"   % deps.main.appDirs,  // finding cache directory
-      "org.slf4j"       %   "slf4j-nop" % deps.main.slf4j,    // disable logger output
+      "de.sciss"                %%  "fileutil"    % deps.main.fileUtil,   // utilities for path construction
+      "io.get-coursier"         %%  "coursier"    % deps.main.coursier,   // fetching artifacts
+      "net.harawata"            %   "appdirs"     % deps.main.appDirs,    // finding cache directory
+      "org.scala-lang.modules"  %%  "scala-swing" % deps.main.scalaSwing, // UI
+      "org.slf4j"               %   "slf4j-nop"   % deps.main.slf4j,      // disable logger output
     ),
     mimaPreviousArtifacts := Set("de.sciss" %% baseNameL % mimaVersion)
   )

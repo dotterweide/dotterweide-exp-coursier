@@ -20,32 +20,56 @@ import coursier._
 import coursier.core.Classifier
 import coursier.util.Task
 import de.sciss.file._
+import javafx.embed.swing.JFXPanel
+import javafx.scene.Scene
+import javafx.scene.web.WebView
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.swing.{Component, Dimension, MainFrame, Swing}
 
-/** A simple test that downloads the scala-docs of ScalaCollider,
+/** A simple test that downloads the unified scala-docs of ScalaCollider,
   * caching them in the `dotterweide` cache directory
   * (e.g. `~/.cache/dotterweide`), then unpacking the jar there,
   * then opening the index of `de.sciss.synth` in the browser.
-  *
-  * Currently we unpack always, even if the jar had been unpacked
-  * before.
-  *
-  * To-dos:
-  *
-  * - on the website we use sbt-unidoc (https://github.com/sbt/sbt-unidoc),
-  *   so we have all libraries interlinked. A solution could be to
-  *   '''publish''' the javadoc of a unidoc project, and then download
-  *   that instead?
   */
 object CoursierTest {
+  val USE_BROWSER = false   // if `false`, display in JavaFX panel
+
   def main(args: Array[String]): Unit = {
-    downloadDocs().foreach { jar =>
-      val baseDir = unpackDocs(jar)
-      val index   = baseDir / "de" / "sciss" / "synth" / "index.html"
-      Desktop.getDesktop.browse(index.toURI)
+    val target  = unpackDir
+    val index   = target / "de" / "sciss" / "synth" / "index.html"
+    if (index.isFile) {
+      openDocs(index)
+    } else {
+      downloadDocs().foreach { jar =>
+        unpackDocs(jar, target = target)
+        openDocs(index)
+      }
     }
   }
+
+  def openDocs(index: File): Unit =
+    if (USE_BROWSER) {
+      println("Opening web browser...")
+      Desktop.getDesktop.browse(index.toURI)
+    } else Swing.onEDT {
+      println("Opening JavaFX view...")
+      // cf. https://docs.oracle.com/javase/8/javafx/interoperability-tutorial/swing-fx-interoperability.htm
+      val fxPanel = new JFXPanel
+      new MainFrame {
+        title     = "API Browser"
+        contents  = Component.wrap(fxPanel)
+        size      = new Dimension(960, 720)
+        centerOnScreen()
+        open()
+      }
+      javafx.application.Platform.runLater(Swing.Runnable {
+        val web   = new WebView
+        web.getEngine.load(index.toURI.toString)
+        val scene = new Scene(web)
+        fxPanel.setScene(scene)
+      })
+    }
 
   def unpackJar(jar: File, target: File): Seq[File] = {
     import java.util.jar._
@@ -67,12 +91,12 @@ object CoursierTest {
     @tailrec def loop(): Unit = {
       val entry: JarEntry = in.getNextJarEntry
       if (entry != null) {
-//        println(entry.getName)
         val f = target / entry.getName
         if (entry.isDirectory) {
           f.mkdirs()
         } else {
           // cf. http://stackoverflow.com/questions/8909743/jarentry-getsize-is-returning-1-when-the-jar-files-is-opened-as-inputstream-f
+          // TODO: this is very slow, is there a faster way?
           val bs  = new BufferedOutputStream(new FileOutputStream(f))
           var i   = 0
           while (i >= 0) {
@@ -90,16 +114,16 @@ object CoursierTest {
     b.result()
   }
 
-  def unpackDocs(jar: File): File = {
-    val unpackDir = CacheDir.obtain().toOption.fold(File.createTemp(directory = true))(_ / "doc")
-    println(s"Unpacking in $unpackDir...")
-    unpackJar(jar, unpackDir)
+  def unpackDir: File = CacheDir.obtain().toOption.fold(File.createTemp(directory = true))(_ / "doc")
+
+  def unpackDocs(jar: File, target: File): Unit = {
+    println(s"Unpacking in $target...")
+    unpackJar(jar, target)
     println("Done.")
-    unpackDir // / "index.html"
   }
 
   def downloadDocs(): Option[File] = {
-    val mod = Module(org"de.sciss", name"scalacollider_2.12")
+    val mod = Module(org"de.sciss", name"scalacollider-unidoc_2.12")
 
     val start = Resolution(
       Set(
