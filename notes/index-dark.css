@@ -135,8 +135,8 @@ span.entity > a.selected {
 }
 
 html {
-  color: #FFFFFF;
-  background-color: #0C0D0D;
+  color: #D8DCE0;
+  background-color: #202428;
   box-sizing: border-box;
 }
 *, *:before, *:after {
@@ -156,7 +156,7 @@ textarea, input { outline: none; }
   bottom: 0px;
   display: block;
   position: fixed;
-  background-color: #0C0D0D;
+  background-color: #202428;
 }
 
 #browser.full-screen {
@@ -608,7 +608,7 @@ div#search-results {
   top: 3em;
   right: 0;
   bottom: 0;
-  background-color: #0C0D0D;
+  background-color: #202428;
   z-index: 101;
   overflow-x: hidden;
   display: none;
@@ -676,7 +676,7 @@ div#results-content > div#member-results > a.package,
 div#results-content > div#entity-results > a.package {
   font-size: 1em;
   margin: 0 0 1em 0;
-  color: #97403F;
+  color: #F16665;
   cursor: pointer;
 }
 

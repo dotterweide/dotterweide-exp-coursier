@@ -33,7 +33,7 @@ input { border-width: 0px; }
 body {
   overflow-x: hidden;
   font-family: Arial, sans-serif;
-  background-color: #0C0D0D;
+  background-color: #202428;
 }
 
 #footer {
@@ -185,7 +185,7 @@ span.symbol > a {
   position: absolute;
   top: 0.45em;
   left: -0.9em;
-  color: #000000;
+  color: #FFFFFF;
   font-size: 1.3em;
   opacity: 0;
   transition: 0.1s;
@@ -301,7 +301,7 @@ dl.attributes > dd {
 #constructors > h3 {
   height: 2em;
   padding: 1em 1em 2em;
-  color: #7BC7FF;
+  color: #C2C2C2;
 }
 
 #inheritedMembers > div.parent > h3 {
@@ -335,13 +335,13 @@ div.members > ol > li {
   display: table;
   width: 100%;
   position: relative;
-  background-color: #000000;
+  background-color: #1D2024;
   border-radius: 0.2em;
   color: #C2C2C2;
   padding: 5px 0 5px;
   margin-bottom: 0.4em;
   min-height: 3.7em;
-  border-left: 0.25em solid #000000;
+  border-left: 0.25em solid #1D2024;
   -webkit-box-shadow: 0 0 10px rgba(255,255,255,0.1);
   box-shadow: 0 0 10px rgba(255,255,255,0.1);
   transition: 0.1s;
@@ -481,7 +481,7 @@ i.unfold-arrow {
 
 #template .types .name {
   font-weight: 600;
-  color: #00E900;
+  color: #27ca7e;
 }
 
 .full-signature-usecase h4 span {
@@ -547,7 +547,7 @@ div#definition > h4#signature > span.modifier_kind > i.unfold-arrow,
 }
 
 #template ol > li > span.permalink > a > i {
-  color: #000000;
+  color: #404850;
 }
 
 #template .members li .permalink,
@@ -611,7 +611,7 @@ div#definition > h4#signature > span.modifier_kind > i.unfold-arrow,
 }
 
 .cmt pre span.cmt {
-  color: #004E00;
+  color: #27CA7E;
 }
 
 .cmt pre span.kw {
@@ -623,7 +623,7 @@ div#definition > h4#signature > span.modifier_kind > i.unfold-arrow,
 }
 
 .cmt pre span.num {
-  color: #1875CE; /* dodgerblue */
+  color: #6AB5FF; /* dodgerblue */
 }
 
 .cmt pre span.std {
@@ -729,7 +729,7 @@ div.fullcomment {
 
 div.fullcomment .block {
   padding: 5px 0 0;
-  border-top: 2px solid #000000;
+  border-top: 2px solid #1D2024;
   margin-top: 5px;
   overflow: hidden;
   font-family: "Open Sans";
@@ -740,7 +740,7 @@ div.fullcommenttop .block {
   padding: 1em;
   margin: 0.5em 0;
   border-radius: 0.2em;
-  background-color: #000000;
+  background-color: #1D2024;
   -webkit-box-shadow: 0 0 10px rgba(255,255,255,0.1);
   box-shadow: 0 0 10px rgba(255,255,255,0.1);
 }
