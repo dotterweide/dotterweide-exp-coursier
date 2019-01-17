@@ -14,6 +14,3 @@ could be clean-up after the experiments:
 
  - `~/.cache/dotterweide` - where the scala-doc files are extracted. (location will be different on Mac and Windows)
  - `~/.coursier` - where Coursier is caching downloads (location will be different on Mac and Windows)
-
-Note: On Linux, JavaFX has really horrible font rendering with off-colour sub-pixels. To have less noisy display, add
-`-Dprism.lcdtext=false` when running.

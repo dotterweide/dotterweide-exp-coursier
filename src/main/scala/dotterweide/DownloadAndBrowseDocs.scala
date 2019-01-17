@@ -22,6 +22,7 @@ import coursier.util.Task
 import de.sciss.file._
 import javafx.embed.swing.JFXPanel
 import javafx.scene.Scene
+import javafx.scene.text.FontSmoothingType
 import javafx.scene.web.WebView
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -94,10 +95,13 @@ object DownloadAndBrowseDocs {
         open()
       }
       javafx.application.Platform.runLater(Swing.Runnable {
-        val web   = new WebView
-        web.getEngine.load(index.toURI.toString)
+        val web = new WebView
+        web.setFontSmoothingType(FontSmoothingType.GRAY)
+        // web.setContextMenuEnabled(true)
+        // web.setFontScale(1.2)
         // web.setZoom(2.0)
         val scene = new Scene(web)
+        web.getEngine.load(index.toURI.toString)
         fxPanel.setScene(scene)
       })
     }
