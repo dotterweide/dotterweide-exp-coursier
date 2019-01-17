@@ -1,5 +1,5 @@
 /*
- *  CoursierTest.scala
+ *  DownloadAndBrowseDocs.scala
  *  (Dotterweide)
  *
  *  Copyright (c) 2019 the Dotterweide authors. All rights reserved.
@@ -32,7 +32,7 @@ import scala.swing.{Component, Dimension, MainFrame, Swing}
   * (e.g. `~/.cache/dotterweide`), then unpacking the jar there,
   * then opening the index of `de.sciss.synth` in the browser.
   */
-object CoursierTest {
+object DownloadAndBrowseDocs {
   val USE_BROWSER = false   // if `false`, display in JavaFX panel
 
   def main(args: Array[String]): Unit = {
@@ -66,6 +66,7 @@ object CoursierTest {
       javafx.application.Platform.runLater(Swing.Runnable {
         val web   = new WebView
         web.getEngine.load(index.toURI.toString)
+        // web.setZoom(2.0)
         val scene = new Scene(web)
         fxPanel.setScene(scene)
       })

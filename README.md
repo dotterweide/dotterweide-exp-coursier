@@ -9,9 +9,11 @@ This repository is covered by the [GNU Lesser General Public License v2.1](https
 
 The project build with [sbt](http://www.scala-sbt.org/) with the main Scala version being 2.12.x.
 
-See `src/main/scala/dotterweise/CoursierTest.scala` for the main class. The following directories/files will be created and
+See `src/main/scala/dotterweise/DownloadAndBrowseDocs.scala` for the main class. The following directories/files will be created and
 could be clean-up after the experiments:
 
  - `~/.cache/dotterweide` - where the scala-doc files are extracted. (location will be different on Mac and Windows)
  - `~/.coursier` - where Coursier is caching downloads (location will be different on Mac and Windows)
 
+Note: On Linux, JavaFX has really horrible font rendering with off-colour sub-pixels. To have less noisy display, add
+`-Dprism.lcdtext=false` when running.
