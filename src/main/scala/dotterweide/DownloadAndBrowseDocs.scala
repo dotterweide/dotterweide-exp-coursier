@@ -33,19 +33,49 @@ import scala.swing.{Component, Dimension, MainFrame, Swing}
   * then opening the index of `de.sciss.synth` in the browser.
   */
 object DownloadAndBrowseDocs {
-  val USE_BROWSER = false   // if `false`, display in JavaFX panel
+  val USE_BROWSER     = false   // if `false`, display in JavaFX panel
+  val USE_DARK_SCHEME = true
 
   def main(args: Array[String]): Unit = {
-    val target  = unpackDir
-    val index   = target / "de" / "sciss" / "synth" / "index.html"
+    val target    = unpackDir
+    val styleDir  = target / "lib"
+    val index     = target / "de" / "sciss" / "synth" / "index.html"
+
+    def proceed(): Unit =
+      setStyleAndOpenDocs(styleDir = styleDir, index = index)
+
     if (index.isFile) {
-      openDocs(index)
+      proceed()
     } else {
       downloadDocs().foreach { jar =>
         unpackDocs(jar, target = target)
-        openDocs(index)
+        proceed()
       }
     }
+  }
+
+  def copyResource(name: String, out: File): Unit = {
+    val is = new BufferedInputStream(getClass.getResourceAsStream(name))
+    try {
+      val os = new BufferedOutputStream(new FileOutputStream(out))
+      try {
+        var byte = 0
+        while ({ byte = is.read(); byte != -1 }) {
+          os.write(byte)
+        }
+      } finally  {
+        os.close()
+      }
+    } finally {
+      is.close()
+    }
+  }
+
+  def setStyleAndOpenDocs(styleDir: File, index: File): Unit = {
+    val tpe = if (USE_DARK_SCHEME) "dark" else "light"
+    copyResource(s"index-$tpe.css"    , styleDir / "index.css")
+    copyResource(s"template-$tpe.css" , styleDir / "template.css")
+    openDocs(index)
   }
 
   def openDocs(index: File): Unit =
