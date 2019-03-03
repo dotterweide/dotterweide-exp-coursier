@@ -15,18 +15,19 @@ package dotterweide
 import coursier.Fetch.Metadata
 import coursier.core.Classifier
 import coursier.util.Task
-import coursier.{Artifact, Attributes, Cache, Dependency, Fetch, FileError, MavenRepository, Module, Resolution, _}
+import coursier.{Artifact, Attributes, Cache, Dependency, Fetch, FileError, MavenRepository, Resolution, Module => CModule, _}
 import de.sciss.file._
+import dotterweide.Util.Module
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object DownloadViaCoursier extends DownloadVia {
-  def run(scalaVersion: Util.Version, maxScalaColliderVersion: Util.Version): Option[File] = {
-    val mod = Module(org"de.sciss", ModuleName(s"scalacollider-unidoc_${scalaVersion.binCompat}"))
+  def run(scalaVersion: Util.Version, module0: Module): Option[File] = {
+    val module = CModule(Organization(module0.groupId), ModuleName(module0.artifactId))
 
     val start = Resolution(
       Set(
-        Dependency(mod, version = maxScalaColliderVersion.toString)
+        Dependency(module, version = module0.version.toString)
       )
     )
 
@@ -41,7 +42,7 @@ object DownloadViaCoursier extends DownloadVia {
     val res: Resolution = start.process.run(fetch).unsafeRun()
     println("Done.")
 
-    val errors: Seq[((Module, String), Seq[String])] = res.errors
+    val errors: Seq[((CModule, String), Seq[String])] = res.errors
 
     if (errors.nonEmpty) {
       println("There were errors:")
@@ -52,7 +53,7 @@ object DownloadViaCoursier extends DownloadVia {
       classifiers = Some(Seq(Classifier.javadoc))
     ).toSet // there are redundancies
 
-    val a = a0.filter(_._1.module == mod)
+    val a = a0.filter(_._1.module == module)
     require (a.size == 1)
 
     val (sourcesDep, sourcesAttr, sourcesArt) = a.head

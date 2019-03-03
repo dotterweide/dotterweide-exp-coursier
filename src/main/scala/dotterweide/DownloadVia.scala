@@ -13,9 +13,9 @@
 package dotterweide
 
 import de.sciss.file.File
-import dotterweide.Util.Version
+import dotterweide.Util.{Module, Version}
 
 trait DownloadVia {
-  def run(scalaVersion           : Version = Version(2,12,8),
-          maxScalaColliderVersion: Version = Version(1,28,0)): Option[File]
+  def run(scalaVersion: Version = Version(2,12,8),
+          latestModule: Module = Module("org.scala-lang", "scala-library_2.12", Version(2,12,8))): Option[File]
 }

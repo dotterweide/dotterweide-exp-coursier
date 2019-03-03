@@ -16,6 +16,7 @@ import java.awt.Desktop
 import java.io.{BufferedInputStream, BufferedOutputStream, ByteArrayInputStream, FileInputStream, FileOutputStream}
 
 import de.sciss.file._
+import dotterweide.Util.{Module, Version}
 import javafx.embed.swing.JFXPanel
 import javafx.scene.Scene
 import javafx.scene.text.FontSmoothingType
@@ -30,7 +31,8 @@ import scala.swing.{Component, Dimension, MainFrame, Swing}
   */
 object DownloadAndBrowseDocs {
   case class Config(useCoursier: Boolean = false, useBrowser: Boolean = false, useDarkScheme: Boolean = true,
-                    wipeCache: Boolean = false)
+                    wipeCache: Boolean = false, useScalaCollider: Boolean = false,
+                    scalaVersion: Version = Version(2,12,8))
 
   def main(args: Array[String]): Unit = {
     val default = Config()
@@ -51,6 +53,15 @@ object DownloadAndBrowseDocs {
       opt[Unit]("wipe-cache")
         .text("Wipe cached javadoc files")
         .action { (_, c) => c.copy(wipeCache = true) }
+
+      opt[String]("scala-version")
+        .text(s"Use Scala version for API docs (default: ${default.scalaVersion}")
+        .validate { v => val tr = Version.parse(v); if (tr.isSuccess) success else failure(tr.failed.get.getMessage) }
+        .action { (v, c) => c.copy(scalaVersion = Version.parse(v).get) }
+
+      opt[Unit]("scala-collider")
+        .text("Browse ScalaCollider API instead of Scala standard library")
+        .action { (_, c) => c.copy(useScalaCollider = true) }
     }
     p.parse(args, default).fold(sys.exit(1)) { config =>
       run(config)
@@ -62,7 +73,11 @@ object DownloadAndBrowseDocs {
 
     val target    = unpackDir
     val styleDir  = target / "lib"
-    val index     = target / "de" / "sciss" / "synth" / "index.html"
+    val index     = if (useScalaCollider) {
+      target / "de" / "sciss" / "synth" / "index.html"
+    } else {
+      target / "scala" / "index.html"
+    }
 
     def proceed(): Unit =
       setStyleAndOpenDocs(styleDir = styleDir, index = index, useBrowser = useBrowser, useDarkScheme =  useDarkScheme)
@@ -77,7 +92,12 @@ object DownloadAndBrowseDocs {
       proceed()
     } else {
       val downloader = if (useCoursier) DownloadViaCoursier else DownloadViaDispatch
-      downloader.run().foreach { jar =>
+      val module = if (useScalaCollider) {
+        Module("de.sciss", s"scalacollider-unidoc_${scalaVersion.binCompat}", Version(1,28,0))
+      } else {
+        Module("org.scala-lang", "scala-library", scalaVersion)
+      }
+      downloader.run(scalaVersion = scalaVersion, latestModule = module).foreach { jar =>
         unpackDocs(jar, target = target)
         proceed()
       }

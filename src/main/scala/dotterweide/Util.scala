@@ -4,13 +4,17 @@ import java.nio.file.Path
 
 import de.sciss.file.File
 
+import scala.util.Try
+
 object Util {
   val mavenCentralBase = "https://repo1.maven.org/maven2"
 
+  case class Module(groupId: String, artifactId: String, version: Version)
+
   object Version {
-    def parse(s: String): Version = {
+    def parse(s: String): Try[Version] = Try {
       val s0 = s.trim.split('.')
-      require (s0.length == 3)
+      if (s0.length != 3) throw new IllegalArgumentException(s"$s should have format epoch.major.minor")
       val Array(epoch, major, minor) = s0
       Version(epoch = epoch.toInt, major = major.toInt, minor = minor.toInt)
     }
@@ -32,8 +36,8 @@ object Util {
   def deleteRecursive(dir: File): Unit = {
     // https://stackoverflow.com/questions/779519/delete-directories-recursively-in-java/27917071#27917071
     import java.io.IOException
-    import java.nio.file.{FileVisitResult, Files, SimpleFileVisitor}
     import java.nio.file.attribute.BasicFileAttributes
+    import java.nio.file.{FileVisitResult, Files, SimpleFileVisitor}
 
     Files.walkFileTree(dir.toPath, new SimpleFileVisitor[Path]() {
       private def delete(p: Path): FileVisitResult = {

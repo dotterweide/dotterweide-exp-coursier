@@ -20,7 +20,7 @@ import de.sciss.processor.Processor
 import de.sciss.processor.impl.FutureProxy
 import dispatch._
 import dispatch.Defaults._
-import dotterweide.Util.Version
+import dotterweide.Util.{Module, Version}
 import org.asynchttpclient.{AsyncHandler, ListenableFuture, Request}
 
 import scala.concurrent.{Await, Promise}
@@ -28,7 +28,9 @@ import scala.concurrent.duration.Duration
 import scala.util.Try
 
 object DownloadViaDispatch extends DownloadVia {
-  case class Module(groupId: String, artifactId: String, version: Version) {
+  implicit class ModuleOps(private val m: Module) extends AnyVal {
+    import m._
+
     def mkBaseUrl(repoBase: Req): Req =
       repoBase / groupId.replace('.', '/') / artifactId
 
@@ -39,14 +41,8 @@ object DownloadViaDispatch extends DownloadVia {
       mkBaseUrl(repoBase) / version.toString / s"$artifactId-$version-javadoc.jar"
   }
 
-//  def main(args: Array[String]): Unit = {
-//    run()
-//    sys.exit()
-//  }
-
-  def run(scalaVersion: Version, maxScalaColliderVersion: Version): Option[File] = {
+  def run(scalaVersion: Version, module: Module): Option[File] = {
     val repo                  = url("https://repo1.maven.org/maven2")
-    val module                = Module("de.sciss", s"scalacollider-unidoc_${scalaVersion.binCompat}", maxScalaColliderVersion)
     val metaDataURL           = module.mkMetaDataUrl(repo)
 
     println("Resolving artifact...")
@@ -60,8 +56,8 @@ object DownloadViaDispatch extends DownloadVia {
     val metaVersioning  = metaData \ "versioning"
     val lastUpdated     = (metaVersioning \ "lastUpdated" ).text.trim.toLong
     val latestVersion   = Version.parse((metaVersioning \ "latest").text)
-    val metaVersions    = (metaVersioning \ "versions" \ "version").map(n => Version.parse(n.text)).sorted.reverse
-    val bestVersionOpt  = metaVersions.find(_ <= maxScalaColliderVersion) // don't care about bin-compat here
+    val metaVersions    = (metaVersioning \ "versions" \ "version").flatMap(n => Version.parse(n.text).toOption).sorted.reverse
+    val bestVersionOpt  = metaVersions.find(_ <= module.version) // don't care about bin-compat here
 
     println(s"Last updated: $lastUpdated; latest version: $latestVersion")
     println("All versions:")
