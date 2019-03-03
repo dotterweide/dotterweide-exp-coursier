@@ -15,17 +15,12 @@ package dotterweide
 import java.awt.Desktop
 import java.io.{BufferedInputStream, BufferedOutputStream, ByteArrayInputStream, FileInputStream, FileOutputStream}
 
-import coursier.Fetch.Metadata
-import coursier._
-import coursier.core.Classifier
-import coursier.util.Task
 import de.sciss.file._
 import javafx.embed.swing.JFXPanel
 import javafx.scene.Scene
 import javafx.scene.text.FontSmoothingType
 import javafx.scene.web.WebView
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.swing.{Component, Dimension, MainFrame, Swing}
 
 /** A simple test that downloads the unified scala-docs of ScalaCollider,
@@ -34,21 +29,55 @@ import scala.swing.{Component, Dimension, MainFrame, Swing}
   * then opening the index of `de.sciss.synth` in the browser.
   */
 object DownloadAndBrowseDocs {
-  val USE_BROWSER     = false   // if `false`, display in JavaFX panel
-  val USE_DARK_SCHEME = true
+  case class Config(useCoursier: Boolean = false, useBrowser: Boolean = false, useDarkScheme: Boolean = true,
+                    wipeCache: Boolean = false)
 
   def main(args: Array[String]): Unit = {
+    val default = Config()
+
+    val p = new scopt.OptionParser[Config]("Demo") {
+      opt[Unit]("coursier")
+        .text("Use Coursier instead of Dispatch")
+        .action { (_, c) => c.copy(useCoursier = true) }
+
+      opt[Unit]("browser")
+        .text("Use web browser instead of JavaFX component")
+        .action { (_, c) => c.copy(useBrowser = true) }
+
+      opt[Unit]("light")
+        .text("Use light colour scheme instead of dark")
+        .action { (_, c) => c.copy(useDarkScheme = false) }
+
+      opt[Unit]("wipe-cache")
+        .text("Wipe cached javadoc files")
+        .action { (_, c) => c.copy(wipeCache = true) }
+    }
+    p.parse(args, default).fold(sys.exit(1)) { config =>
+      run(config)
+    }
+  }
+
+  def run(config: Config): Unit = {
+    import config._
+
     val target    = unpackDir
     val styleDir  = target / "lib"
     val index     = target / "de" / "sciss" / "synth" / "index.html"
 
     def proceed(): Unit =
-      setStyleAndOpenDocs(styleDir = styleDir, index = index)
+      setStyleAndOpenDocs(styleDir = styleDir, index = index, useBrowser = useBrowser, useDarkScheme =  useDarkScheme)
+
+    if (index.isFile && wipeCache) {
+      println("Wiping cache...")
+      Util.deleteRecursive(target)
+    }
 
     if (index.isFile) {
+      println("Reusing cached docs.")
       proceed()
     } else {
-      downloadDocs().foreach { jar =>
+      val downloader = if (useCoursier) DownloadViaCoursier else DownloadViaDispatch
+      downloader.run().foreach { jar =>
         unpackDocs(jar, target = target)
         proceed()
       }
@@ -72,15 +101,15 @@ object DownloadAndBrowseDocs {
     }
   }
 
-  def setStyleAndOpenDocs(styleDir: File, index: File): Unit = {
-    val tpe = if (USE_DARK_SCHEME) "dark" else "light"
+  def setStyleAndOpenDocs(styleDir: File, index: File, useBrowser: Boolean, useDarkScheme: Boolean): Unit = {
+    val tpe = if (useDarkScheme) "dark" else "light"
     copyResource(s"index-$tpe.css"    , styleDir / "index.css")
     copyResource(s"template-$tpe.css" , styleDir / "template.css")
-    openDocs(index)
+    openDocs(index, useBrowser = useBrowser)
   }
 
-  def openDocs(index: File): Unit =
-    if (USE_BROWSER) {
+  def openDocs(index: File, useBrowser: Boolean): Unit =
+    if (useBrowser) {
       println("Opening web browser...")
       Desktop.getDesktop.browse(index.toURI)
     } else Swing.onEDT {
@@ -155,63 +184,5 @@ object DownloadAndBrowseDocs {
     println(s"Unpacking in $target...")
     unpackJar(jar, target)
     println("Done.")
-  }
-
-  def downloadDocs(): Option[File] = {
-    val mod = Module(org"de.sciss", name"scalacollider-unidoc_2.12")
-
-    val start = Resolution(
-      Set(
-        Dependency(mod, version = "1.28.0")
-      )
-    )
-
-    val repositories = Seq(
-      Cache.ivy2Local,
-      MavenRepository("https://repo1.maven.org/maven2")
-    )
-
-    val fetch: Metadata[Task] = Fetch.from(repositories, Cache.fetch[Task]())
-
-    println("Resolving...")
-    val res: Resolution = start.process.run(fetch).unsafeRun()
-    println("Done.")
-
-    val errors: Seq[((Module, String), Seq[String])] = res.errors
-
-    if (errors.nonEmpty) {
-      println("There were errors:")
-      errors.foreach(println)
-    }
-
-    val a0: Set[(Dependency, Attributes, Artifact)] = res.dependencyArtifacts(
-      classifiers = Some(Seq(Classifier.javadoc))
-    ).toSet // there are redundancies
-
-    val a = a0.filter(_._1.module == mod)
-    require (a.size == 1)
-
-    val (sourcesDep, sourcesAttr, sourcesArt) = a.head
-
-    println(s"dependency: $sourcesDep")
-    println(s"attributes: $sourcesAttr")
-    println(s"artifact  : $sourcesArt")
-
-    println("Downloading...")
-//    println(s"default cache = ${Cache.default}")
-    val cacheDir = CacheDir.obtain().toOption.fold(Cache.default)(_ / "coursier")
-    val local: Either[FileError, File] = Cache.file[Task](sourcesArt, cache = cacheDir).run.unsafeRun()
-    println("Done.")
-
-    local match {
-      case Right(f) =>
-        println(s"local     : $f")
-        Some(f)
-
-      case Left(err) =>
-        println("There was an error:")
-        println(err)
-        None
-    }
   }
 }
