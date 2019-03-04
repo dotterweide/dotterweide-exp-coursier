@@ -13,7 +13,7 @@
 package dotterweide
 
 import java.awt.Desktop
-import java.io.{BufferedInputStream, BufferedOutputStream, ByteArrayInputStream, FileInputStream, FileOutputStream}
+import java.io.{BufferedInputStream, BufferedOutputStream, FileInputStream, FileOutputStream}
 
 import de.sciss.file._
 import dotterweide.Util.{Module, Version}
@@ -22,6 +22,7 @@ import javafx.scene.Scene
 import javafx.scene.text.FontSmoothingType
 import javafx.scene.web.WebView
 
+import scala.collection.immutable.{Seq => ISeq}
 import scala.swing.{Component, Dimension, MainFrame, Swing}
 
 /** A simple test that downloads the unified scala-docs of ScalaCollider,
@@ -30,9 +31,14 @@ import scala.swing.{Component, Dimension, MainFrame, Swing}
   * then opening the index of `de.sciss.synth` in the browser.
   */
 object DownloadAndBrowseDocs {
-  case class Config(useCoursier: Boolean = false, useBrowser: Boolean = false, useDarkScheme: Boolean = true,
-                    wipeCache: Boolean = false, useScalaCollider: Boolean = false,
-                    scalaVersion: Version = Version(2,12,8))
+  case class Config(
+                     useCoursier     : Boolean = false,
+                     useBrowser      : Boolean = false,
+                     useDarkScheme   : Boolean = true,
+                     wipeCache       : Boolean = false,
+                     useScalaCollider: Boolean = false,
+                     scalaVersion    : Version = Version(2,12,8)
+                   )
 
   def main(args: Array[String]): Unit = {
     val default = Config()
@@ -155,46 +161,39 @@ object DownloadAndBrowseDocs {
       })
     }
 
-  def unpackJar(jar: File, target: File): Seq[File] = {
+  // cf. http://stackoverflow.com/questions/8909743/jarentry-getsize-is-returning-1-when-the-jar-files-is-opened-as-inputstream-f
+
+  def unpackJar(jar: File, target: File): ISeq[File] = {
     import java.util.jar._
 
-    import scala.annotation.tailrec
+    val b   = ISeq.newBuilder[File]
+    val in  = new JarInputStream(new BufferedInputStream(new FileInputStream(jar)))
 
-    val jarIn = new BufferedInputStream(new FileInputStream(jar))
-    val bytes = try {
-      val jarSz = jarIn.available()
-      val arr = new Array[Byte](jarSz)
-      jarIn.read(arr)
-      arr
-    } finally {
-      jarIn.close()
-    }
-    val in    = new JarInputStream(new ByteArrayInputStream(bytes))
-    val b     = Seq.newBuilder[File]
-
-    @tailrec def loop(): Unit = {
+    try while ({
       val entry: JarEntry = in.getNextJarEntry
-      if (entry != null) {
-        val f = target / entry.getName
+      (entry != null) && {
+        val f = new File(target, entry.getName)
         if (entry.isDirectory) {
           f.mkdirs()
         } else {
-          // cf. http://stackoverflow.com/questions/8909743/jarentry-getsize-is-returning-1-when-the-jar-files-is-opened-as-inputstream-f
-          // TODO: this is very slow, is there a faster way?
-          val bs  = new BufferedOutputStream(new FileOutputStream(f))
-          var i   = 0
-          while (i >= 0) {
-            i = in.read()
-            if (i >= 0) bs.write(i)
+          val bs = new BufferedOutputStream(new FileOutputStream(f))
+          try {
+            val arr = new Array[Byte](1024)
+            while ({
+              val sz = in.read(arr, 0, 1024)
+              (sz > 0) && { bs.write(arr, 0, sz); true }
+            }) ()
+          } finally {
+            bs.close()
           }
-          bs.close()
         }
         b += f
-        loop()
+        true
       }
+    }) () finally {
+      in.close()
     }
-    loop()
-    in.close()
+
     b.result()
   }
 
